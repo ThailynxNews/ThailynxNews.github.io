@@ -309,7 +309,7 @@
           "
         >
           <h3 style="margin: 0">ข่าวล่าสุด</h3>
-          <div style="color: var(--muted); font-size: 13px">
+          <div style="color: var(--muted); font-size: 13px" id="page-date">
             อัปเดต: 27 ก.ย. 2025
           </div>
         </div>
@@ -343,6 +343,7 @@
         document.getElementById("latest-news-title").innerHTML = `${latest.title} `;
         document.getElementById("latest-news-auther").innerHTML = `${latest.auther} `;
         document.getElementById("latest-news-date").innerHTML = `${latest.date} `;
+        document.getElementById("page-date").innerHTML = `อัปเดต: ${latest.date} `;
         document.getElementById("latest-news-detail").innerHTML = `${latest.detail} `;
         main_news.splice(-1, 1)
         console.log("🚀 ~ main_news:", main_news)
