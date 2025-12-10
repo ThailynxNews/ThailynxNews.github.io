@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delta Force - Gun Randomizer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 3rem;
+        color: #ff4444;
+        text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        color: #888;
+        font-size: 1.2rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        width: 100%;
+      }
+
+      .wheel-container {
+        position: relative;
+        width: 1200px;
+        height: 400px;
+        margin: 0 auto 30px;
+        overflow: hidden;
+        border: 3px solid #ff4444;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.5);
+      }
+
+      .wheel {
+        display: flex;
+        position: absolute;
+        left: 0;
+        transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+      }
+
+      .wheel-item {
+        min-width: 200px;
+        height: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        border-right: 2px solid #333;
+      }
+
+      .wheel-item img {
+        width: 360px;
+        height: 360px;
+        object-fit: contain;
+        filter: brightness(0.7);
+      }
+
+      .wheel-item.active img {
+        filter: brightness(1);
+      }
+
+      .wheel-item h3 {
+        position: absolute;
+        bottom: 60px;
+        font-size: 0.9rem;
+        text-align: center;
+        color: #888;
+      }
+
+      .selector {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      .selector::before,
+      .selector::after {
+        content: "▼";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 3rem;
+        color: #ff4444;
+        text-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+      }
+
+      .selector::before {
+        top: -200px;
+      }
+
+      .selector::after {
+        content: "▲";
+        bottom: -200px;
+      }
+
+      .controls {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .btn-spin {
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        border: none;
+        padding: 20px 60px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 50px;
+        box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+      }
+
+      .btn-spin:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(255, 68, 68, 0.6);
+      }
+
+      .btn-spin:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .result-container {
+        background: rgba(0, 0, 0, 0.7);
+        border: 2px solid #ff4444;
+        border-radius: 10px;
+        padding: 30px;
+        display: none;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .result-container.show {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .result-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .result-header h2 {
+        color: #ff4444;
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+
+      .result-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+
+      .gun-preview {
+        text-align: center;
+      }
+
+      .gun-preview img {
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 5px 20px rgba(255, 68, 68, 0.3);
+      }
+
+      .gun-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .gun-info h3 {
+        color: #ff4444;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+      }
+
+      .gun-stats {
+        display: grid;
+        gap: 10px;
+      }
+
+      .stat-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px;
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .stat-label {
+        color: #888;
+      }
+
+      .stat-value {
+        color: #fff;
+        font-weight: bold;
+      }
+
+      .gun-attachments {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .gun-attachments h4 {
+        color: #ff4444;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+      }
+
+      .attachment-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .attachment-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 8px 12px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .attachment-icon {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+      }
+
+      .attachment-type {
+        color: #888;
+        font-size: 0.85rem;
+        min-width: 80px;
+      }
+
+      .attachment-name {
+        color: #fff;
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .wheel-container {
+          width: 100%;
+          height: 300px;
+        }
+
+        .wheel-item {
+          min-width: 150px;
+          height: 300px;
+        }
+
+        .wheel-item img {
+          width: 120px;
+          height: 120px;
+        }
+
+        .result-content {
+          grid-template-columns: 1fr;
+        }
+
+        .btn-spin {
+          padding: 15px 40px;
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>DELTA FORCE</h1>
+      <p>รับไปสิ CURSE น่ะ</p>
+    </div>
+
+    <div class="container">
+      <div class="wheel-container">
+        <div class="selector"></div>
+        <div class="wheel" id="wheel"></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn-spin" id="spinBtn">SPIN NOW!</button>
+      </div>
+
+      <div class="result-container" id="resultContainer">
+        <div class="result-header">
+          <h2>🎯 YOUR WEAPON 🎯</h2>
+        </div>
+        <div class="result-content">
+          <div class="gun-preview">
+            <img id="resultImage" src="" alt="Gun" />
+          </div>
+          <div class="gun-info">
+            <h3 id="resultName"></h3>
+            <div class="gun-stats">
+              <div class="stat-item">
+                <span class="stat-label">Type:</span>
+                <span class="stat-value" id="resultType"></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Fire Rate:</span>
+                <span class="stat-value" id="resultFireRate"></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Capacity:</span>
+                <span class="stat-value" id="resultCapacity"></span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Damage:</span>
+                <span class="stat-value" id="resultDamage"></span>
+              </div>
+              <!-- <div class="stat-item">
+                <span class="stat-label">Fire Mode:</span>
+                <span class="stat-value" id="resultFireMode"></span>
+              </div> -->
+            </div>
+            <div class="gun-attachments" id="gun-attachments"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { gunList } from "./gunlist.js";
+      import { mapGunName } from "./mapGunName.js";
+      import { mapAcc } from "./mapAcc.js";
+      const wheel = document.getElementById("wheel");
+      const spinBtn = document.getElementById("spinBtn");
+      const resultContainer = document.getElementById("resultContainer");
+      let isSpinning = false;
+      function secureRandomIndex(length) {
+        const a = new Uint32Array(1);
+        crypto.getRandomValues(a);
+        return a[0] % length;
+      }
+
+      // Initialize wheel with guns
+      function initWheel() {
+        const displayGuns = [...gunList, ...gunList, ...gunList]; // Triple for smooth scroll
+        wheel.innerHTML = displayGuns
+          .map(
+            (gun, index) => `
+                <div class="wheel-item" data-index="${index}">
+                    <img src="${gun.prePic}" alt="${gun.objectName}">
+                    <h3>${
+                      mapGunName[gun.objectID]?.name ||
+                      gun.objectName.replace(/{{|}}/g, "")
+                    }</h3>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      // Spin the wheel
+      function spinWheel() {
+        console.log("spin");
+
+        if (isSpinning) return;
+
+        isSpinning = true;
+        spinBtn.disabled = true;
+        resultContainer.classList.remove("show");
+
+        // Reset wheel position before starting new spin
+        wheel.style.transition = "none";
+        wheel.style.transform = "translateX(0)";
+
+        // Force reflow to apply the reset
+        wheel.offsetHeight;
+
+        // const randomIndex = Math.floor(Math.random() * gunList.length);
+
+        const randomIndex = secureRandomIndex(gunList.length);
+        const targetGun = gunList[randomIndex];
+
+        // Calculate spin distance
+        const itemWidth = 400;
+        const containerWidth = 1200;
+        const centerOffset = containerWidth / 2; // Center of container
+        const baseOffset = gunList.length * itemWidth; // Start from middle set
+        const targetOffset = randomIndex * itemWidth;
+        const itemCenter = itemWidth / 2; // Center of item
+        const extraSpins = 3000; // Extra distance for effect
+
+        // Position the target item's center at the container's center
+        // const finalPosition = -(baseOffset + targetOffset + extraSpins - centerOffset + itemCenter);
+        const finalPosition = -(targetOffset + itemCenter - centerOffset);
+
+        wheel.style.transition =
+          "transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)";
+        wheel.style.transform = `translateX(${finalPosition}px)`;
+
+        // Show result after spin
+        setTimeout(() => {
+          displayResult(targetGun);
+          isSpinning = false;
+          spinBtn.disabled = false;
+        }, 3000);
+      }
+
+      // Display result
+      function displayResult(gun) {
+        document.getElementById("resultImage").src = gun.pic;
+        document.getElementById("resultName").textContent =
+          mapGunName[gun.objectID]?.name ||
+          gun.objectName.replace(/{{|}}/g, "");
+        document.getElementById("resultType").textContent = gun.secondClass;
+        document.getElementById("resultFireRate").textContent =
+          gun.gunDetail.fireSpeed;
+        document.getElementById("resultCapacity").textContent =
+          gun.gunDetail.capacity;
+        document.getElementById("resultDamage").textContent =
+          gun.gunDetail.meatHarm;
+        // document.getElementById("resultFireMode").textContent =
+        //   gun.gunDetail.fireMode.replace(/{{|}}/g, "");
+
+        // Display attachments
+        const attachmentsContainer = document.getElementById("gun-attachments");
+        const gunAttachments = mapAcc;
+
+        if (gunAttachments && Object.keys(gunAttachments).length > 0) {
+          let attachmentsHTML =
+            '<h4>Attachments:</h4><div class="attachment-list">';
+
+          for (const [type, attachment] of Object.entries(gunAttachments)) {
+            attachmentsHTML += `
+              <div class="attachment-item">
+                <img src="${
+                  attachment.icon || ""
+                }" alt="${type}" class="attachment-icon" onerror="this.style.display='none'">
+                <span class="attachment-name">${
+                  attachment.type || "Unknown"
+                }</span>
+              </div>
+            `;
+          }
+
+          attachmentsHTML += "</div>";
+          attachmentsContainer.innerHTML = attachmentsHTML;
+        } else {
+          attachmentsContainer.innerHTML = "";
+        }
+
+        resultContainer.classList.add("show");
+      }
+
+      // Event listeners
+      spinBtn.addEventListener("click", spinWheel);
+
+      // Initialize
+      initWheel();
+    </script>
+  </body>
+</html>
