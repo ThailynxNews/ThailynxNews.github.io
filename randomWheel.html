@@ -170,7 +170,7 @@
 
       .current-budget {
         font-size: 1.5rem;
-        color: #4CAF50;
+        color: #4caf50;
         font-weight: bold;
         margin-top: 10px;
         text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
@@ -427,7 +427,6 @@
         <!-- <p class="current-budget" id="currentBudget">Current Budget: 0</p> -->
         <p class="gun-count" id="gunCount">Available guns: 0</p>
         <button class="btn-spin" id="spinBtn">SPIN NOW!</button>
-        <button class="budget-reset" id="resetBtn" style="display: none;">Reset Budget</button>
       </div>
 
       <div class="result-container" id="resultContainer">
@@ -482,7 +481,6 @@
       const budgetInput = document.getElementById("budgetInput");
       const gunCountDisplay = document.getElementById("gunCount");
       // const currentBudgetDisplay = document.getElementById("currentBudget");
-      const resetBtn = document.getElementById("resetBtn");
       let isSpinning = false;
       let filteredGuns = [...gunList];
       const maxBudget = 9999999999999999;
@@ -498,7 +496,7 @@
       // Update current budget display
       function updateCurrentBudgetDisplay() {
         // currentBudgetDisplay.textContent = `Current Budget: ${currentBudget.toLocaleString()}`;
-        
+
         // // Update color based on remaining budget
         // currentBudgetDisplay.classList.remove('low', 'empty');
         // if (currentBudget === 0) {
@@ -508,27 +506,26 @@
         // }
 
         // Show/hide reset button
-        resetBtn.style.display = initialBudget > 0 ? 'inline-block' : 'none';
       }
 
       // Filter guns by budget
       function filterGunsByBudget() {
         const budget = parseFloat(budgetInput.value);
-        
+
         if (!budget || budget <= 0) {
           filteredGuns = [...gunList];
           currentBudget = maxBudget;
           initialBudget = 0;
         } else {
           // Only reset currentBudget if initialBudget changes
-          if (!!budget && initialBudget !== budget && budget !== 0) {
+          if (!!budget && budget !== 0) {
             currentBudget = budget;
             initialBudget = budget;
           }
-          
-          filteredGuns = gunList.filter(gun => {
+
+          filteredGuns = gunList.filter((gun) => {
             const price = parseFloat(gun.price || 0);
-            return gun.price && price <= currentBudget;
+            return !!gun.price && price <= currentBudget;
           });
         }
 
@@ -537,18 +534,14 @@
         initWheel();
       }
 
-      // Reset budget to initial value
-      function resetBudget() {
-        currentBudget = initialBudget;
-        filterGunsByBudget();
-      }
 
       // Initialize wheel with guns
       function initWheel() {
-        const displayGuns = filteredGuns.length > 0 
-          ? [...filteredGuns, ...filteredGuns, ...filteredGuns]
-          : [...gunList, ...gunList, ...gunList];
-        
+        const displayGuns =
+          filteredGuns.length > 0
+            ? [...filteredGuns, ...filteredGuns, ...filteredGuns]
+            : [...gunList, ...gunList, ...gunList];
+
         wheel.innerHTML = displayGuns
           .map(
             (gun, index) => `
@@ -566,12 +559,11 @@
 
       // Spin the wheel
       function spinWheel() {
-        console.log("spin");
-
         if (isSpinning) return;
+        filterGunsByBudget();
 
         const gunsToUse = filteredGuns.length > 0 ? filteredGuns : gunList;
-        
+
         if (gunsToUse.length === 0) {
           alert("No guns available within your budget!");
           return;
@@ -611,9 +603,8 @@
           if (currentBudget > 0 && gunPrice > 0) {
             currentBudget -= gunPrice;
             if (currentBudget < 0) currentBudget = 0;
-            filterGunsByBudget();
           }
-          
+
           displayResult(targetGun);
           isSpinning = false;
           spinBtn.disabled = false;
@@ -627,7 +618,7 @@
           mapGunName[gun.objectID]?.name ||
           gun.objectName.replace(/{{|}}/g, "");
         document.getElementById("resultType").textContent = gun.secondClass;
-        // document.getElementById("resultPrice").textContent = 
+        // document.getElementById("resultPrice").textContent =
         //   gun.price ? parseFloat(gun.price).toLocaleString() : "N/A";
         document.getElementById("resultFireRate").textContent =
           gun.gunDetail.fireSpeed;
@@ -647,16 +638,36 @@
             '<h4>Attachments:</h4><div class="attachment-list">';
 
           for (const [type, attachment] of Object.entries(gunAttachments)) {
-            attachmentsHTML += `
+            if (
+              attachment.type === "accMagazine" &&
+              gun.mag &&
+              gun.mag.length > 0
+            ) {
+              const randomIndexMag = secureRandomIndex(gun.mag.length);
+              const targetMag = gun.mag[randomIndexMag];
+              currentBudget -= parseFloat(targetMag.price || 0) || 0;
+               attachmentsHTML += `
               <div class="attachment-item">
                 <img src="${
                   attachment.icon || ""
                 }" alt="${type}" class="attachment-icon" onerror="this.style.display='none'">
-                <span class="attachment-name">${
-                  attachment.type || "Unknown"
-                }</span>
-              </div>
-            `;
+                  <span class="attachment-name">${
+                    targetMag.name || "Unknown"
+                  }</span>
+                    </div>
+                    `;
+            } else {
+              attachmentsHTML += `
+              <div class="attachment-item">
+                <img src="${
+                  attachment.icon || ""
+                }" alt="${type}" class="attachment-icon" onerror="this.style.display='none'">
+                  <span class="attachment-name">${
+                    attachment.type || "Unknown"
+                  }</span>
+                    </div>
+                    `;
+            }
           }
 
           attachmentsHTML += "</div>";
@@ -670,11 +681,7 @@
 
       // Event listeners
       spinBtn.addEventListener("click", spinWheel);
-      budgetInput.addEventListener("input", filterGunsByBudget);
-      resetBtn.addEventListener("click", resetBudget);
-
       // Initialize
-      filterGunsByBudget();
       initWheel();
     </script>
   </body>
