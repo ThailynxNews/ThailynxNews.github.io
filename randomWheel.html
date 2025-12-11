@@ -126,6 +126,81 @@
         margin-bottom: 30px;
       }
 
+      .budget-input-container {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .budget-input-container label {
+        font-size: 1.2rem;
+        color: #ff4444;
+        font-weight: bold;
+      }
+
+      .budget-input-container input {
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid #ff4444;
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-size: 1.2rem;
+        color: #fff;
+        width: 200px;
+        text-align: center;
+      }
+
+      .budget-input-container input:focus {
+        outline: none;
+        border-color: #ff6666;
+        box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+      }
+
+      .budget-input-container input::placeholder {
+        color: #666;
+      }
+
+      .gun-count {
+        color: #888;
+        font-size: 0.9rem;
+        margin-top: 10px;
+      }
+
+      .current-budget {
+        font-size: 1.5rem;
+        color: #4CAF50;
+        font-weight: bold;
+        margin-top: 10px;
+        text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+      }
+
+      .current-budget.low {
+        color: #ff9800;
+      }
+
+      .current-budget.empty {
+        color: #f44336;
+      }
+
+      .budget-reset {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #888;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 20px;
+        margin-top: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .budget-reset:hover {
+        border-color: #ff4444;
+        background: rgba(255, 68, 68, 0.2);
+      }
+
       .btn-spin {
         background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
         border: none;
@@ -228,6 +303,11 @@
         justify-content: space-between;
       }
 
+      .stat-item.highlight {
+        background: rgba(255, 68, 68, 0.2);
+        border: 1px solid #ff4444;
+      }
+
       .stat-label {
         color: #888;
       }
@@ -308,6 +388,16 @@
           padding: 15px 40px;
           font-size: 1.2rem;
         }
+
+        .budget-input-container {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .budget-input-container input {
+          width: 100%;
+          max-width: 300px;
+        }
       }
     </style>
   </head>
@@ -324,7 +414,20 @@
       </div>
 
       <div class="controls">
+        <div class="budget-input-container">
+          <label for="budgetInput">Budget Price:</label>
+          <input
+            type="number"
+            id="budgetInput"
+            placeholder="Enter max price"
+            min="0"
+            step="100"
+          />
+        </div>
+        <!-- <p class="current-budget" id="currentBudget">Current Budget: 0</p> -->
+        <p class="gun-count" id="gunCount">Available guns: 0</p>
         <button class="btn-spin" id="spinBtn">SPIN NOW!</button>
+        <button class="budget-reset" id="resetBtn" style="display: none;">Reset Budget</button>
       </div>
 
       <div class="result-container" id="resultContainer">
@@ -342,6 +445,10 @@
                 <span class="stat-label">Type:</span>
                 <span class="stat-value" id="resultType"></span>
               </div>
+              <!-- <div class="stat-item highlight">
+                <span class="stat-label">Price:</span>
+                <span class="stat-value" id="resultPrice"></span>
+              </div> -->
               <div class="stat-item">
                 <span class="stat-label">Fire Rate:</span>
                 <span class="stat-value" id="resultFireRate"></span>
@@ -372,16 +479,76 @@
       const wheel = document.getElementById("wheel");
       const spinBtn = document.getElementById("spinBtn");
       const resultContainer = document.getElementById("resultContainer");
+      const budgetInput = document.getElementById("budgetInput");
+      const gunCountDisplay = document.getElementById("gunCount");
+      // const currentBudgetDisplay = document.getElementById("currentBudget");
+      const resetBtn = document.getElementById("resetBtn");
       let isSpinning = false;
+      let filteredGuns = [...gunList];
+      const maxBudget = 9999999999999999;
+      let currentBudget = maxBudget;
+      let initialBudget = 0;
+
       function secureRandomIndex(length) {
         const a = new Uint32Array(1);
         crypto.getRandomValues(a);
         return a[0] % length;
       }
 
+      // Update current budget display
+      function updateCurrentBudgetDisplay() {
+        // currentBudgetDisplay.textContent = `Current Budget: ${currentBudget.toLocaleString()}`;
+        
+        // // Update color based on remaining budget
+        // currentBudgetDisplay.classList.remove('low', 'empty');
+        // if (currentBudget === 0) {
+        //   currentBudgetDisplay.classList.add('empty');
+        // } else if (initialBudget > 0 && currentBudget < initialBudget * 0.3) {
+        //   currentBudgetDisplay.classList.add('low');
+        // }
+
+        // Show/hide reset button
+        resetBtn.style.display = initialBudget > 0 ? 'inline-block' : 'none';
+      }
+
+      // Filter guns by budget
+      function filterGunsByBudget() {
+        const budget = parseFloat(budgetInput.value);
+        
+        if (!budget || budget <= 0) {
+          filteredGuns = [...gunList];
+          currentBudget = maxBudget;
+          initialBudget = 0;
+        } else {
+          // Only reset currentBudget if initialBudget changes
+          if (!!budget && initialBudget !== budget && budget !== 0) {
+            currentBudget = budget;
+            initialBudget = budget;
+          }
+          
+          filteredGuns = gunList.filter(gun => {
+            const price = parseFloat(gun.price || 0);
+            return gun.price && price <= currentBudget;
+          });
+        }
+
+        gunCountDisplay.textContent = `Available guns: ${filteredGuns.length}`;
+        updateCurrentBudgetDisplay();
+        initWheel();
+      }
+
+      // Reset budget to initial value
+      function resetBudget() {
+        currentBudget = initialBudget;
+        filterGunsByBudget();
+      }
+
       // Initialize wheel with guns
       function initWheel() {
-        const displayGuns = [...gunList, ...gunList, ...gunList]; // Triple for smooth scroll
+        const displayGuns = filteredGuns.length > 0 
+          ? [...filteredGuns, ...filteredGuns, ...filteredGuns]
+          : [...gunList, ...gunList, ...gunList];
+        
         wheel.innerHTML = displayGuns
           .map(
             (gun, index) => `
@@ -403,6 +570,13 @@
 
         if (isSpinning) return;
 
+        const gunsToUse = filteredGuns.length > 0 ? filteredGuns : gunList;
+        
+        if (gunsToUse.length === 0) {
+          alert("No guns available within your budget!");
+          return;
+        }
+
         isSpinning = true;
         spinBtn.disabled = true;
         resultContainer.classList.remove("show");
@@ -414,22 +588,16 @@
         // Force reflow to apply the reset
         wheel.offsetHeight;
 
-        // const randomIndex = Math.floor(Math.random() * gunList.length);
-
-        const randomIndex = secureRandomIndex(gunList.length);
-        const targetGun = gunList[randomIndex];
+        const randomIndex = secureRandomIndex(gunsToUse.length);
+        const targetGun = gunsToUse[randomIndex];
 
         // Calculate spin distance
         const itemWidth = 400;
         const containerWidth = 1200;
-        const centerOffset = containerWidth / 2; // Center of container
-        const baseOffset = gunList.length * itemWidth; // Start from middle set
+        const centerOffset = containerWidth / 2;
         const targetOffset = randomIndex * itemWidth;
-        const itemCenter = itemWidth / 2; // Center of item
-        const extraSpins = 3000; // Extra distance for effect
+        const itemCenter = itemWidth / 2;
 
-        // Position the target item's center at the container's center
-        // const finalPosition = -(baseOffset + targetOffset + extraSpins - centerOffset + itemCenter);
         const finalPosition = -(targetOffset + itemCenter - centerOffset);
 
         wheel.style.transition =
@@ -438,6 +606,14 @@
 
         // Show result after spin
         setTimeout(() => {
+          // Decrease current budget by gun price
+          const gunPrice = parseFloat(targetGun.price || 0);
+          if (currentBudget > 0 && gunPrice > 0) {
+            currentBudget -= gunPrice;
+            if (currentBudget < 0) currentBudget = 0;
+            filterGunsByBudget();
+          }
+          
           displayResult(targetGun);
           isSpinning = false;
           spinBtn.disabled = false;
@@ -451,6 +627,8 @@
           mapGunName[gun.objectID]?.name ||
           gun.objectName.replace(/{{|}}/g, "");
         document.getElementById("resultType").textContent = gun.secondClass;
+        // document.getElementById("resultPrice").textContent = 
+        //   gun.price ? parseFloat(gun.price).toLocaleString() : "N/A";
         document.getElementById("resultFireRate").textContent =
           gun.gunDetail.fireSpeed;
         document.getElementById("resultCapacity").textContent =
@@ -492,8 +670,11 @@
 
       // Event listeners
       spinBtn.addEventListener("click", spinWheel);
+      budgetInput.addEventListener("input", filterGunsByBudget);
+      resetBtn.addEventListener("click", resetBudget);
 
       // Initialize
+      filterGunsByBudget();
       initWheel();
     </script>
   </body>
